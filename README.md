@@ -187,19 +187,23 @@ def train_ch6(net, train_iter, test_iter, num_epochs, lr, wd, device):
 ##### load_data_CIFAR
 
 ```python
-def load_data_CIFAR(batch_size, resize=None, download=False):
-    trans = [transforms.ToTensor()]
+def load_data_CIFAR(batch_size, resize=None, strong_data=False, download=False):
+    trans = [transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406],[0.229, 0.224, 0.225])]
     if resize:
         trans.insert(0,transforms.Resize(resize))
-    trans = transforms.Compose(trans)
-    train = torchvision.datasets.CIFAR100(
-        root='./data', train=True, transform=trans, download=download)
+    trans_h = transforms.Compose([
+        transforms.ColorJitter(brightness=(0.5, 1.5)),
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        *trans,
+    ])
+    trans_orin = transforms.Compose(trans)
+    train_h = torchvision.datasets.CIFAR100(
+        root='../data', train=True, transform=trans_h, download=download)
     test = torchvision.datasets.CIFAR100(
-        root='./data', train=False, transform=trans, download=download)
-    return (data.DataLoader(train, batch_size, shuffle=True, num_workers=get_dataloader_workers(),
-                            prefetch_factor=2*get_dataloader_workers(), pin_memory=True),
-            data.DataLoader(test, batch_size, shuffle=False, num_workers=get_dataloader_workers(),
-                            prefetch_factor=2*get_dataloader_workers(), pin_memory=True))
+        root='../data', train=False, transform=trans_orin, download=download)
+    return (data.DataLoader(train_h, batch_size, shuffle=True, pin_memory=True),
+            data.DataLoader(test, batch_size, shuffle=False, pin_memory=True))
 ```
 
 ### 1. 多层感知机(MLP)
